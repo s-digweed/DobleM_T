@@ -1,0 +1,35 @@
+name: Clean DobleM EPG
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "41 1,5,9,13,17,21 * * *"   # every 4h, off-the-hour minute
+
+permissions:
+  contents: write
+
+concurrency:
+  group: clean-doblem
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Sanitize davidmuma EPG
+        run: python clean_dm.py
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No change - davidmuma guide identical since last run."
+          else
+            git commit -m "Update cleaned davidmuma EPG"
+            git push
+          fi
